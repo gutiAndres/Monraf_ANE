@@ -1,0 +1,4 @@
+Command: cmake -G Ninja -DPYTHON_DEPS_CHECKED=1 -DPYTHON=/home/ogutierreze/.espressif/python_env/idf5.5_py3.12_env/bin/python -DESP_PLATFORM=1 -DSDKCONFIG='/home/ogutierreze/GPDS_Proyects/Test_ANE/ANE2_Procesamiento/ANE2_procesamiento/MonRaF-ANE1/sdkconfig' -DCCACHE_ENABLE=0 /home/ogutierreze/GPDS_Proyects/Test_ANE/ANE2_Procesamiento/ANE2_procesamiento/MonRaF-ANE1
+CMake Error: Error: generator : Ninja
+Does not match the generator used previously: Unix Makefiles
+Either remove the CMakeCache.txt file and CMakeFiles directory or choose a different binary directory.
