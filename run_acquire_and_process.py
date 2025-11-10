@@ -5,6 +5,9 @@ from pathlib import Path
 import numpy as np 
 import csv
 import os
+from psd_welch_hackrf_exec import procesar_archivo_psd
+import os, time
+
 
 # ==============================
 # Configuración general
@@ -12,14 +15,22 @@ import os
 
 def main():
     exe_path = "./test_capture"
-    python_cmd = "python"  # usa tu intérprete normal
-    script_python = Path("/home/ogutierreze/GPDS_Proyects/Test_ANE/ANE2_Procesamiento/ANE2_procesamiento/MonRaF-ANE1/psd_welch_hackrf_exec.py")
-
     samples = 20000000
-    frecuencias = list(range(5680, 5981, 20)) # MHz  
-    print(frecuencias)
-    
+    frecuencias = list(range(98, 5981, 20))  # MHz 
 
+    # === Ruta automática ===
+    # Obtiene el directorio donde está este script Python actual
+    base_dir = Path(__file__).resolve().parent
+
+    iq_base_path = base_dir /"Samples"
+    output_path = base_dir /"Output_DANL_dbfs2"
+    scale = 'dBfs'
+    R_ant = 50
+    corrige_impedancia = False
+    nperseg = 2000
+    overlap = 0.5
+
+    print(frecuencias)
     t_inicio_total = time.perf_counter()
 
     for i, freq in enumerate(frecuencias, start=1):
@@ -31,22 +42,34 @@ def main():
         subprocess.run([exe_path, str(samples), str(freq)], check=True)
         print(f"[OK] Captura completada para {freq} MHz")
 
-        # --- Ejecutar script Python ---
-        print(f"[INFO] Ejecutando PSD con índice {i}")
-        subprocess.run([python_cmd, str(script_python), "--fs", str(samples), "--indice", str(freq)], check=True)
-        print(f"[OK] PSD procesada para {freq} MHz")
+        # --- Construir ruta del archivo IQ generado ---
+        iq_path = os.path.join(iq_base_path, str(0))  # por ejemplo: Samples/5680
+        print(f"[INFO] Procesando archivo IQ: {iq_path}")
+
+        # --- Llamar directamente a la función Python ---
+        f, Pxx, csv_filename = procesar_archivo_psd(
+            iq_path=iq_path,
+            output_path=output_path,
+            fs=samples,
+            indice=freq,
+            scale=scale,
+            R_ant=R_ant,
+            corrige_impedancia=corrige_impedancia,
+            nperseg=nperseg,
+            overlap=overlap,
+            plot=True
+        )
+
+        print(f"[OK] PSD procesada para {freq} MHz. Archivo: {csv_filename}")
 
         t_fin_ciclo = time.perf_counter()
         print(f"⏱ Duración ciclo {freq} MHz: {t_fin_ciclo - t_inicio_ciclo:.2f} s")
 
         print("Esperando para la siguiente ...")
-
         time.sleep(1)
 
     t_fin_total = time.perf_counter()
     print(f"\n🏁 Duración total del proceso: {t_fin_total - t_inicio_total:.2f} s")
 
-
-
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

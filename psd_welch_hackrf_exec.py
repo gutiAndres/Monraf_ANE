@@ -4,7 +4,7 @@ from scipy.signal import welch
 import os
 import csv
 import argparse
-
+from pathlib import Path
 
 def load_hackrf_cs8(filepath):
     """
@@ -67,7 +67,9 @@ def compute_psd_welch(iq_samples, fs, scale='dB', R_ant=50, corrige_impedancia=T
     f = np.fft.fftshift(f)
 
     # --- Conversión de escala ---
-    Pxx = Pxx / R_ant  # convertir V²/Hz -> W/Hz
+    if corrige_impedancia==True:
+
+        Pxx = Pxx / R_ant  # convertir V²/Hz -> W/Hz
 
     if scale == 'v2/hz':
         return f, Pxx
@@ -87,7 +89,9 @@ def compute_psd_welch(iq_samples, fs, scale='dB', R_ant=50, corrige_impedancia=T
     elif scale == 'dbfs':
         # Asumimos iq_samples normalizados a ±1 (full scale)
         # Potencia full-scale para una senoide: 0.5 (V²)
-        Pxx = Pxx*R_ant
+        if corrige_impedancia==True:
+            Pxx = Pxx*R_ant  
+                
         P_FS = 1
         Pxx_dBFS = 10 * np.log10(Pxx / P_FS + 1e-20)
         return f, Pxx_dBFS
@@ -221,38 +225,6 @@ def procesar_archivo_psd(iq_path, output_path, fs, indice, scale='dBfs',
     return f, Pxx, csv_filename
 
 
-def main():
-    """
-    Función main original mantenida para compatibilidad
-    """
-    # === Argumentos de consola ===
-    parser = argparse.ArgumentParser(description="Calcula PSD con Welch (HackRF .cs8)")
-    parser.add_argument('--fs', type=float, required=True, help='Frecuencia de muestreo [Hz]')
-    parser.add_argument('--indice', type=int, required=True, help='Índice para el nombre del archivo de salida')
-    args = parser.parse_args()
-
-    # === Parámetros fijos ===
-    iq_path = "/home/ogutierreze/GPDS_Proyects/Test_ANE/ANE2_Procesamiento/ANE2_procesamiento/MonRaF-ANE1/Samples/0"
-    output_path = "/home/ogutierreze/GPDS_Proyects/Test_ANE/ANE2_Procesamiento/ANE2_procesamiento/MonRaF-ANE1/Output_DANL_dbfs"
-    scale = 'dBfs'
-    R_ant = 50
-    corrige_impedancia = False
-    nperseg = 2000
-    overlap = 0.5
-
-    # Procesar usando la nueva función
-    f, Pxx, csv_filename = procesar_archivo_psd(
-        iq_path=iq_path,
-        output_path=output_path,
-        fs=args.fs,
-        indice=args.indice,
-        scale=scale,
-        R_ant=R_ant,
-        corrige_impedancia=corrige_impedancia,
-        nperseg=nperseg,
-        overlap=overlap,
-        plot=False
-    )
 
 
 
