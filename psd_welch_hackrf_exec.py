@@ -103,7 +103,7 @@ def compute_psd_welch(iq_samples, fs, scale='dB', R_ant=50, corrige_impedancia=T
         raise ValueError("Escala no válida. Use 'V2/Hz', 'dB', 'dBm' o 'dBFS'.")
 
 
-def save_psd_to_csv(filepath, f, Pxx, scale):
+def save_psd_to_csv(filepath, f, Pxx, scale,save_csv=False):
     """
     Guarda resultados PSD en CSV dentro de /static/
     """
@@ -119,14 +119,15 @@ def save_psd_to_csv(filepath, f, Pxx, scale):
         for freq, val in zip(f, Pxx):
             writer.writerow([freq, val])
 
-    # si además quieres guardar el archivo original con nombre personalizado:
-    with open(filepath, 'w', newline='') as f_csv:
-        writer = csv.writer(f_csv)
-        writer.writerow(['Frequency (Hz)', f'PSD ({scale})'])
-        for freq, val in zip(f, Pxx):
-            writer.writerow([freq, val])
+    if save_csv:
+        # si además quieres guardar el archivo original con nombre personalizado:
+        with open(filepath, 'w', newline='') as f_csv:
+            writer = csv.writer(f_csv)
+            writer.writerow(['Frequency (Hz)', f'PSD ({scale})'])
+            for freq, val in zip(f, Pxx):
+                writer.writerow([freq, val])
 
-    print(f"[OK] PSD guardada en {filepath_static} y {filepath}")
+        print(f"[OK] PSD guardada en {filepath_static} y {filepath}")
 
 
 def plot_psd(f, Pxx, scale, save_path="static/last_plot.png"):
@@ -235,9 +236,9 @@ def procesar_archivo_psd(iq_path, output_path, fs, indice, scale='dBfs',
     os.makedirs(output_path, exist_ok=True)
     base_name = f"psd_output_{scale}_{indice}"
     csv_filename = get_unique_filename(output_path, base_name, "csv")
-    if save_csv:
-        save_psd_to_csv(csv_filename, f, Pxx, scale)
-        print(f"[OK] PSD guardada en: {csv_filename}")
+
+    save_psd_to_csv(csv_filename, f, Pxx, scale,save_csv=save_csv)
+    print(f"[OK] PSD guardada en: {csv_filename}")
 
     # Mostrar RBW efectivo
     rbw = fs / nperseg
