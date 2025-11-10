@@ -18,9 +18,12 @@ def main():
     f_in = sys.argv[1]
     f_fin = sys.argv[2]
     step = sys.argv[3]
+    n_cycles = sys.argv[4]
+
     exe_path = "./test_capture"
     samples = 20000000
-    frecuencias = list(range(int(f_in), int(f_fin) + 1, int(step)))  # MHz 
+    frecuencias = [freq for freq in range(f_in, f_fin, step) for _ in range(n_cycles)]
+
 
     # === Ruta automática ===
     # Obtiene el directorio donde está este script Python actual
