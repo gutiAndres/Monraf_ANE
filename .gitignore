@@ -1,0 +1,6 @@
+**/venv/
+**/.vscode/
+**/build/
+**/Output_DANL_dbfs/
+**/Output_DANL_dbfs2/
+**/__pycache__/
