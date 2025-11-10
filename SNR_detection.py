@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import re
+from pathlib import Path
 
 def load_psd_csv(filepath, RBW=None):
     """
@@ -184,5 +185,7 @@ def analyze_noise_floor_all(folder_path, delta_dB=0.5, plot=True):
 
 # === Ejemplo de uso ===
 if __name__ == "__main__":
-    ruta_outputs = "/home/ogutierreze/GPDS_Proyects/Test_ANE/ANE2_Procesamiento/ANE2_procesamiento/MonRaF-ANE1/Output_DANL_dbfs"
+        # Obtiene el directorio donde está este script Python actual
+    base_dir = Path(__file__).resolve().parent
+    ruta_outputs = base_dir/"Output_DANL_dbfs"
     resultados = analyze_noise_floor_all(ruta_outputs, delta_dB=0.5)
