@@ -7,6 +7,7 @@ import csv
 import os
 from psd_welch_hackrf_exec import procesar_archivo_psd
 import os, time
+import sys
 
 
 # ==============================
@@ -14,9 +15,12 @@ import os, time
 # ==============================
 
 def main():
+    f_in = sys.argv[1]
+    f_fin = sys.argv[2]
+    step = sys.argv[3]
     exe_path = "./test_capture"
     samples = 20000000
-    frecuencias = list(range(98, 5981, 20))  # MHz 
+    frecuencias = list(range(int(f_in), int(f_fin) + 1, int(step)))  # MHz 
 
     # === Ruta automática ===
     # Obtiene el directorio donde está este script Python actual
