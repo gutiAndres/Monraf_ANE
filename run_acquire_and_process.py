@@ -21,8 +21,8 @@ def main():
     n_cycles = sys.argv[4]
 
     exe_path = "./test_capture"
-    samples = 20000000
-    frecuencias = [freq for freq in range(f_in, f_fin, step) for _ in range(n_cycles)]
+    samples = 5000000
+    frecuencias = [freq for freq in range(int(f_in), int(f_fin), int(step)) for _ in range(int(n_cycles))]
 
 
     # === Ruta automática ===
@@ -64,7 +64,8 @@ def main():
             corrige_impedancia=corrige_impedancia,
             nperseg=nperseg,
             overlap=overlap,
-            plot=False
+            plot=False,
+            save_csv=False
         )
 
         print(f"[OK] PSD procesada para {freq} MHz. Archivo: {csv_filename}")
