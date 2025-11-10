@@ -57,7 +57,7 @@ def main():
             corrige_impedancia=corrige_impedancia,
             nperseg=nperseg,
             overlap=overlap,
-            plot=True
+            plot=False
         )
 
         print(f"[OK] PSD procesada para {freq} MHz. Archivo: {csv_filename}")

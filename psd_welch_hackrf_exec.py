@@ -1,10 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # backend sin GUI
 from scipy.signal import welch
 import os
 import csv
 import argparse
 from pathlib import Path
+
 
 def load_hackrf_cs8(filepath):
     """
@@ -102,27 +105,47 @@ def compute_psd_welch(iq_samples, fs, scale='dB', R_ant=50, corrige_impedancia=T
 
 def save_psd_to_csv(filepath, f, Pxx, scale):
     """
-    Guarda resultados PSD en CSV
+    Guarda resultados PSD en CSV dentro de /static/
     """
+    save_dir = Path("static")
+    save_dir.mkdir(exist_ok=True)
+
+    # guardamos como "last_psd.csv" además de la ruta original
+    filepath_static = save_dir / "last_psd.csv"
+
+    with open(filepath_static, 'w', newline='') as f_csv:
+        writer = csv.writer(f_csv)
+        writer.writerow(['Frequency (Hz)', f'PSD ({scale})'])
+        for freq, val in zip(f, Pxx):
+            writer.writerow([freq, val])
+
+    # si además quieres guardar el archivo original con nombre personalizado:
     with open(filepath, 'w', newline='') as f_csv:
         writer = csv.writer(f_csv)
         writer.writerow(['Frequency (Hz)', f'PSD ({scale})'])
         for freq, val in zip(f, Pxx):
             writer.writerow([freq, val])
 
+    print(f"[OK] PSD guardada en {filepath_static} y {filepath}")
 
-def plot_psd(f, Pxx, scale):
+
+def plot_psd(f, Pxx, scale, save_path="static/last_plot.png"):
     """
-    Grafica PSD
+    Genera el gráfico de la PSD y lo guarda en una imagen PNG.
     """
-    plt.figure(figsize=(10,6))
-    plt.plot(f, Pxx)
-    plt.title(f"Densidad Espectral de Potencia (Escala: {scale})")
-    plt.xlabel("Frecuencia [Hz]")
-    plt.ylabel(f"PSD [{scale}]")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(f, Pxx)
+    ax.set_title(f"Densidad Espectral de Potencia (Escala: {scale})")
+    ax.set_xlabel("Frecuencia [Hz]")
+    ax.set_ylabel(f"PSD [{scale}]")
+    ax.grid(True)
+    fig.tight_layout()
+
+    fig.savefig(save_path, format='png')
+    plt.close(fig)
+    print(f"[OK] Gráfico guardado en {save_path}")
 
 def get_unique_filename(base_path, base_name, extension):
     """
@@ -147,7 +170,8 @@ def get_unique_filename(base_path, base_name, extension):
 
 def procesar_archivo_psd(iq_path, output_path, fs, indice, scale='dBfs', 
                          R_ant=50, corrige_impedancia=False, nperseg=2000, 
-                         overlap=0.5, fc=None, plot=False):
+                         overlap=0.5, fc=None, plot=True
+                         ):
     """
     Procesa un archivo IQ y calcula su PSD usando el método de Welch.
     
