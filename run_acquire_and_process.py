@@ -21,9 +21,9 @@ def main():
     n_cycles = sys.argv[4]
 
     exe_path = "./test_capture"
-    samples = 5000000
-    frecuencias = [freq for freq in range(int(f_in), int(f_fin), int(step)) for _ in range(int(n_cycles))]
-
+    samples = 2000000
+    frecuencias = [88]*50
+    print(frecuencias)
 
     # === Ruta automática ===
     # Obtiene el directorio donde está este script Python actual
@@ -34,7 +34,7 @@ def main():
     scale = 'dBfs'
     R_ant = 50
     corrige_impedancia = False
-    nperseg = 2000
+    nperseg = 2048
     overlap = 0.5
 
     print(frecuencias)
@@ -57,7 +57,7 @@ def main():
         f, Pxx, csv_filename = procesar_archivo_psd(
             iq_path=iq_path,
             output_path=output_path,
-            fs=samples,
+            fs=20e6,
             indice=freq,
             scale=scale,
             R_ant=R_ant,
@@ -65,7 +65,8 @@ def main():
             nperseg=nperseg,
             overlap=overlap,
             plot=False,
-            save_csv=False
+            save_csv=False,
+            update_static= False
         )
 
         print(f"[OK] PSD procesada para {freq} MHz. Archivo: {csv_filename}")

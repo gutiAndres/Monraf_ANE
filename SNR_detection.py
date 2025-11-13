@@ -187,5 +187,5 @@ def analyze_noise_floor_all(folder_path, delta_dB=0.5, plot=True):
 if __name__ == "__main__":
         # Obtiene el directorio donde está este script Python actual
     base_dir = Path(__file__).resolve().parent
-    ruta_outputs = base_dir/"Output_DANL_dbfs"
+    ruta_outputs = base_dir/"Output_DANL_dbfs2"
     resultados = analyze_noise_floor_all(ruta_outputs, delta_dB=0.5)

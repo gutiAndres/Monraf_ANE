@@ -61,7 +61,7 @@ HTML_PAGE = """
         }
 
         updatePlot(); // primer render
-        setInterval(updatePlot, 1000); // actualiza cada 1s
+        setInterval(updatePlot, 500); // actualiza cada 1s
     </script>
 </body>
 </html>
