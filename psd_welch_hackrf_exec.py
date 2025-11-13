@@ -7,7 +7,6 @@ import os
 import csv
 import argparse
 from pathlib import Path
-import requests 
 
 
 def load_hackrf_cs8(filepath):
@@ -104,51 +103,57 @@ def compute_psd_welch(iq_samples, fs, scale='dB', R_ant=50, corrige_impedancia=T
         raise ValueError("Escala no válida. Use 'V2/Hz', 'dB', 'dBm' o 'dBFS'.")
 
 
+import csv
+import requests
+from pathlib import Path
 from io import StringIO
 
-def save_psd_to_csv(filepath, f, Pxx, scale, save_csv=False, update_static=False):
+def save_psd_to_csv(filepath, f, Pxx, scale, save_csv=False,update_static=True):
     """
-    Envía los resultados PSD al servidor Flask en el PC.
-    Si save_csv=True, guarda el archivo en el PC.
-    Si update_static=True, actualiza también 'last_psd.csv' en el servidor.
+    Guarda resultados PSD en CSV dentro de /static/ (local)
+    y si save_csv=True, también lo envía al servidor Flask del PC.
     """
 
-    # === CONFIGURACIÓN ===
-    SERVER_URL = "http://172.20.26.226:5000/upload_csv"  # tu PC con Flask
+    # === CONFIG SERVIDOR (PC) ===
+    SERVER_URL = "http://172.20.26.226:5000/upload_csv"  # dirección del server Flask en Windows
 
-    # === 1️⃣ Construimos el contenido CSV en memoria ===
-    csv_buffer = StringIO()
-    writer = csv.writer(csv_buffer)
-    writer.writerow(['Frequency (Hz)', f'PSD ({scale})'])
-    for freq, val in zip(f, Pxx):
-        writer.writerow([freq, val])
-    csv_data = csv_buffer.getvalue()
-    csv_buffer.close()
+    # === 1️⃣ Guardado local igual que antes ===
+    save_dir = Path("static")
+    save_dir.mkdir(exist_ok=True)
+    filepath_static = save_dir / "last_psd.csv"
 
-    # === 2️⃣ Preparamos los datos para enviar ===
-    filename = Path(filepath).name
-    folder_path = str(Path(filepath).parent)
+    if update_static:
+        with open(filepath_static, 'w', newline='') as f_csv:
+            writer = csv.writer(f_csv)
+            writer.writerow(['Frequency (Hz)', f'PSD ({scale})'])
+            for freq, val in zip(f, Pxx):
+                writer.writerow([freq, val])
 
-    files = {'file': (filename, csv_data, 'text/csv')}
-    data = {
-        'folder_path': folder_path,
-        'update_static': str(update_static).lower()
-    }
-
-    # === 3️⃣ Enviamos al servidor (si save_csv=True) ===
     if save_csv:
+        # Guarda el archivo original en la Raspberry
+        with open(filepath, 'w', newline='') as f_csv:
+            writer = csv.writer(f_csv)
+            writer.writerow(['Frequency (Hz)', f'PSD ({scale})'])
+            for freq, val in zip(f, Pxx):
+                writer.writerow([freq, val])
+
+        print(f"[OK] PSD guardada en {filepath_static} y {filepath}")
+
+        # === 2️⃣ Envío del archivo al PC ===
         try:
-            response = requests.post(SERVER_URL, files=files, data=data)
+            with open(filepath, 'r') as f_to_send:
+                files = {'file': (Path(filepath).name, f_to_send, 'text/csv')}
+                data = {'folder_path': str(Path(filepath).parent)}
+                response = requests.post(SERVER_URL, files=files, data=data)
+
             if response.status_code == 200:
-                print(f"[OK] PSD enviada y guardada en el PC ({filename})")
-                if update_static:
-                    print(f"[OK] 'last_psd.csv' también actualizada en el PC")
+                print(f"[OK] Archivo enviado y guardado en el PC ({Path(filepath).name})")
             else:
                 print(f"[ERROR] Servidor respondió con código {response.status_code}")
+
         except Exception as e:
             print(f"[ERROR] No se pudo enviar el archivo al servidor: {e}")
-    else:
-        print("[INFO] save_csv=False → no se envió al servidor")
+
 
 
 def plot_psd(f, Pxx, scale, save_path="static/last_plot.png"):
@@ -189,11 +194,10 @@ def get_unique_filename(base_path, base_name, extension):
     return full_path
 
 #on7
-update_static= True
 
 def procesar_archivo_psd(iq_path, output_path, fs, indice, scale='dBfs', 
                          R_ant=50, corrige_impedancia=False, nperseg=2000, 
-                         overlap=0.5, fc=None, plot=True,save_csv=True, update_static= False
+                         overlap=0.5, fc=None, plot=True,save_csv=True,update_static=True
                          ):
     """
     Procesa un archivo IQ y calcula su PSD usando el método de Welch.
@@ -259,9 +263,7 @@ def procesar_archivo_psd(iq_path, output_path, fs, indice, scale='dBfs',
     base_name = f"psd_output_{scale}_{indice}"
     csv_filename = get_unique_filename(output_path, base_name, "csv")
 
-    save_psd_to_csv(csv_filename, f, Pxx, scale,save_csv=save_csv,update_static=update_static)
-
-
+    save_psd_to_csv(csv_filename, f, Pxx, scale,save_csv=save_csv, update_static=update_static)
     print(f"[OK] PSD guardada en: {csv_filename}")
 
     # Mostrar RBW efectivo
