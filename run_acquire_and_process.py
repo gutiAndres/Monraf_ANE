@@ -66,7 +66,7 @@ def main():
             overlap=overlap,
             plot=False,
             save_csv=False,
-            update_static= False
+            update_static= True
         )
 
         print(f"[OK] PSD procesada para {freq} MHz. Archivo: {csv_filename}")
