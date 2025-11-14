@@ -106,53 +106,58 @@ def compute_psd_welch(iq_samples, fs, scale='dB', R_ant=50, corrige_impedancia=T
 import csv
 import requests
 from pathlib import Path
-from io import StringIO
+import io
 
-def save_psd_to_csv(filepath, f, Pxx, scale, save_csv=False,update_static=True):
+
+def save_psd_to_csv(filepath, f, Pxx, scale, save_csv=False, update_static=True):
     """
-    Guarda resultados PSD en CSV dentro de /static/ (local)
-    y si save_csv=True, también lo envía al servidor Flask del PC.
+    Guarda resultados PSD:
+    - Siempre envía el CSV al servidor remoto.
+    - Si save_csv=True, también guarda una copia local (en 'filepath').
+    - Si update_static=True, actualiza 'static/last_psd.csv'.
     """
 
-    # === CONFIG SERVIDOR (PC) ===
-    SERVER_URL = "http://172.20.26.226:5000/upload_csv"  # dirección del server Flask en Windows
+    # === 1️⃣ Crear CSV en memoria ===
+    csv_buffer = io.StringIO()
+    writer = csv.writer(csv_buffer)
+    writer.writerow(['Frequency (Hz)', f'PSD ({scale})'])
+    for freq, val in zip(f, Pxx):
+        writer.writerow([freq, val])
+    csv_buffer.seek(0)
 
-    # === 1️⃣ Guardado local igual que antes ===
-    save_dir = Path("static")
-    save_dir.mkdir(exist_ok=True)
-    filepath_static = save_dir / "last_psd.csv"
-
-    if update_static:
-        with open(filepath_static, 'w', newline='') as f_csv:
-            writer = csv.writer(f_csv)
-            writer.writerow(['Frequency (Hz)', f'PSD ({scale})'])
-            for freq, val in zip(f, Pxx):
-                writer.writerow([freq, val])
-
+    # === 2️⃣ Guardar copia local (si se solicita) ===
     if save_csv:
-        # Guarda el archivo original en la Raspberry
         with open(filepath, 'w', newline='') as f_csv:
-            writer = csv.writer(f_csv)
-            writer.writerow(['Frequency (Hz)', f'PSD ({scale})'])
-            for freq, val in zip(f, Pxx):
-                writer.writerow([freq, val])
+            f_csv.write(csv_buffer.getvalue())
+        print(f"[OK] PSD guardada localmente en {filepath}")
 
-        print(f"[OK] PSD guardada en {filepath_static} y {filepath}")
+    # === 3️⃣ Guardar copia estática (si se solicita) ===
+    if update_static:
+        static_dir = Path("static")
+        static_dir.mkdir(exist_ok=True)
+        filepath_static = static_dir / "last_psd.csv"
+        with open(filepath_static, 'w', newline='') as f_csv:
+            f_csv.write(csv_buffer.getvalue())
+        print(f"[OK] PSD actualizada en {filepath_static}")
 
-        # === 2️⃣ Envío del archivo al PC ===
-        try:
-            with open(filepath, 'r') as f_to_send:
-                files = {'file': (Path(filepath).name, f_to_send, 'text/csv')}
-                data = {'folder_path': str(Path(filepath).parent)}
-                response = requests.post(SERVER_URL, files=files, data=data)
+    # === 4️⃣ Enviar CSV al servidor (siempre) ===
+    folder_path = str(Path(filepath).parent)
+    SERVER_URL = "http://172.20.28.18:5000/upload_csv"
 
-            if response.status_code == 200:
-                print(f"[OK] Archivo enviado y guardado en el PC ({Path(filepath).name})")
-            else:
-                print(f"[ERROR] Servidor respondió con código {response.status_code}")
+    # Reiniciar puntero antes de enviar
+    csv_buffer.seek(0)
+    files = {'file': (Path(filepath).name, csv_buffer, 'text/csv')}
+    data = {'folder_path': folder_path}
 
-        except Exception as e:
-            print(f"[ERROR] No se pudo enviar el archivo al servidor: {e}")
+    try:
+        response = requests.post(SERVER_URL, files=files, data=data)
+        if response.status_code == 200:
+            print(f"[OK] CSV enviado y guardado en servidor: {response.text}")
+        else:
+            print(f"[ERROR] Falló subida CSV: {response.status_code}")
+    except Exception as e:
+        print(f"[ERROR] No se pudo enviar CSV al servidor: {e}")
+
 
 
 
@@ -275,7 +280,6 @@ def procesar_archivo_psd(iq_path, output_path, fs, indice, scale='dBfs',
         plot_psd(f, Pxx, scale)
 
     return f, Pxx, csv_filename
-
 
 
 

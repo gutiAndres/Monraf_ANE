@@ -21,8 +21,8 @@ def main():
     n_cycles = sys.argv[4]
 
     exe_path = "./test_capture"
-    samples = 2000000
-    frecuencias = [88]*50
+    samples = 10000000
+    frecuencias = [freq for freq in range(int(f_in), int(f_fin)+1, int(step)) for _ in range(int(n_cycles))]
     print(frecuencias)
 
     # === Ruta automática ===
