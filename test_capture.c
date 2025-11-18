@@ -8,15 +8,25 @@
 
 
 int main(int argc, char *argv[]) {
-    long samples = (argc > 1) ? strtol(argv[1], NULL, 10) : 20000000;
-    uint64_t freq = (argc > 2) ? strtol(argv[2], NULL, 10) : 498;
 
-    if (capture_signal(samples, freq) != 0) return 1;
+    // Parámetros obligatorios u opcionales
+    long samples = (argc > 1) ? strtol(argv[1], NULL, 10) : 20000000;
+    uint64_t freq = (argc > 2) ? strtoull(argv[2], NULL, 10) : 498;
+
+    // Nuevos parámetros desde la línea de comandos
+    uint16_t lna  = (argc > 3) ? (uint16_t)atoi(argv[3]) : 24;  // LNA gain
+    uint16_t vga  = (argc > 4) ? (uint16_t)atoi(argv[4]) : 2;   // VGA gain
+
+    printf("▶ Parámetros usados: samples=%ld, freq=%lu MHz, LNA=%u, VGA=%u\n",
+           samples, freq, lna, vga);
+
+    // Llamada actualizada a la función
+    if (capture_signal(samples, freq, lna, vga) != 0)
+        return 1;
 
     size_t N;
     complex double* x = convert_cs8("Samples/0", &N);
     if (!x) return 1;
-
     
    /*
     remove_dc(x, N);

@@ -19,6 +19,8 @@ def main():
     f_fin = sys.argv[2]
     step = sys.argv[3]
     n_cycles = sys.argv[4]
+    lna = sys.argv[5]
+    vga = sys.argv[6]
 
     exe_path = "./test_capture"
     samples = 10000000
@@ -46,7 +48,13 @@ def main():
 
         # --- Ejecutar captura C ---
         print(f"[INFO] Ejecutando captura: {exe_path} {samples} {freq}")
-        subprocess.run([exe_path, str(samples), str(freq)], check=True)
+        subprocess.run([
+            exe_path,
+            str(samples),
+            str(freq),
+            str(lna),
+            str(vga)
+        ], check=True)
         print(f"[OK] Captura completada para {freq} MHz")
 
         # --- Construir ruta del archivo IQ generado ---
