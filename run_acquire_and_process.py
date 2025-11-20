@@ -32,17 +32,26 @@ def main():
     base_dir = Path(__file__).resolve().parent
 
     iq_base_path = base_dir /"Samples"
-    output_path = base_dir /"Output_DANL_dbfs2"
-    scale = 'dBfs'
+    output_path = base_dir /"Output_Dinamic_range"
+    scale = 'dBm'
     R_ant = 50
     corrige_impedancia = False
     nperseg = 2048
     overlap = 0.5
 
+
+    amp_init =-8
+    amp_fin =-6
+    step_amp = 2
+
+    amp = range(int(amp_init),int(amp_fin)+1,int(step_amp))
+    j=0
+
     print(frecuencias)
     t_inicio_total = time.perf_counter()
 
     for i, freq in enumerate(frecuencias, start=1):
+
         print(f"\n=== [CICLO {i}] Ejecutando captura y procesamiento para {freq} MHz ===")
         t_inicio_ciclo = time.perf_counter()
 
@@ -74,8 +83,9 @@ def main():
             overlap=overlap,
             plot=False,
             save_csv=False,
-            update_static= False
+            update_static= True, Amplitud=amp[j]
         )
+        j +=1
 
         print(f"[OK] PSD procesada para {freq} MHz. Archivo: {csv_filename}")
 
@@ -83,7 +93,7 @@ def main():
         print(f"⏱ Duración ciclo {freq} MHz: {t_fin_ciclo - t_inicio_ciclo:.2f} s")
 
         print("Esperando para la siguiente ...")
-        time.sleep(1)
+        time.sleep(8)
 
     t_fin_total = time.perf_counter()
     print(f"\n🏁 Duración total del proceso: {t_fin_total - t_inicio_total:.2f} s")
