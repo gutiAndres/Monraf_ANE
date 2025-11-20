@@ -42,8 +42,8 @@ def main():
     #Amplitudes para rango dinamico 
     dinamic_range = False
     
-    amp_init =-8
-    amp_fin =-6
+    amp_init =-60
+    amp_fin =-10
     step_amp = 2
 
     amp = range(int(amp_init),int(amp_fin)+1,int(step_amp))
