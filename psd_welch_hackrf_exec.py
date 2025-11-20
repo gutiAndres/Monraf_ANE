@@ -202,7 +202,7 @@ def get_unique_filename(base_path, base_name, extension):
 
 def procesar_archivo_psd(iq_path, output_path, fs, indice, scale='dBfs', 
                          R_ant=50, corrige_impedancia=False, nperseg=2000, 
-                         overlap=0.5, fc=None, plot=True,save_csv=True,update_static=True,Amplitud=10
+                         overlap=0.5, fc=None, plot=True,save_csv=True,update_static=True,Amplitud=10,dinamic_range = False
                          ):
     """
     Procesa un archivo IQ y calcula su PSD usando el método de Welch.
@@ -241,6 +241,7 @@ def procesar_archivo_psd(iq_path, output_path, fs, indice, scale='dBfs',
     # Calcular frecuencia central si no se proporciona
     if fc is None:
         fc = indice * 1000000
+
     
     print(f"[INFO] Procesando archivo: {iq_path}")
     print(f"[INFO] Parámetros: fs={fs} Hz, fc={fc} Hz, scale={scale}, nperseg={nperseg}")
@@ -265,8 +266,13 @@ def procesar_archivo_psd(iq_path, output_path, fs, indice, scale='dBfs',
 
     # === Guardar CSV con índice en el nombre (evita sobreescribir) ===
     os.makedirs(output_path, exist_ok=True)
-    base_name = f"psd_output_{scale}_{indice}_{Amplitud}"
+    if dinamic_range:
+        base_name = f"psd_output_{scale}_{indice}_{Amplitud}"
+    else:
+        base_name = f"psd_output_{scale}_{indice}"
+
     csv_filename = get_unique_filename(output_path, base_name, "csv")
+
 
     save_psd_to_csv(csv_filename, f, Pxx, scale,save_csv=save_csv, update_static=update_static)
     print(f"[OK] PSD guardada en: {csv_filename}")

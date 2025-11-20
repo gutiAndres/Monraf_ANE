@@ -39,7 +39,9 @@ def main():
     nperseg = 2048
     overlap = 0.5
 
-
+    #Amplitudes para rango dinamico 
+    dinamic_range = False
+    
     amp_init =-8
     amp_fin =-6
     step_amp = 2
@@ -83,7 +85,7 @@ def main():
             overlap=overlap,
             plot=False,
             save_csv=False,
-            update_static= True, Amplitud=amp[j]
+            update_static= True, Amplitud=amp[j],dinamic_range = dinamic_range
         )
         j +=1
 
