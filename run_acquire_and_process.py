@@ -48,11 +48,16 @@ def main():
 
     amp = range(int(amp_init),int(amp_fin)+1,int(step_amp))
     j=0
+    ifamp = amp[j]
 
     print(frecuencias)
     t_inicio_total = time.perf_counter()
 
     for i, freq in enumerate(frecuencias, start=1):
+        if dinamic_range:
+            ifamp = amp[j]
+        else:
+            ifamp =1
 
         print(f"\n=== [CICLO {i}] Ejecutando captura y procesamiento para {freq} MHz ===")
         t_inicio_ciclo = time.perf_counter()
@@ -72,6 +77,8 @@ def main():
         iq_path = os.path.join(iq_base_path, str(0))  # por ejemplo: Samples/5680
         print(f"[INFO] Procesando archivo IQ: {iq_path}")
 
+        
+
         # --- Llamar directamente a la función Python ---
         f, Pxx, csv_filename = procesar_archivo_psd(
             iq_path=iq_path,
@@ -85,7 +92,7 @@ def main():
             overlap=overlap,
             plot=False,
             save_csv=False,
-            update_static= True, Amplitud=amp[j],dinamic_range = dinamic_range
+            update_static= True, Amplitud=ifamp,dinamic_range = dinamic_range
         )
         j +=1
 
