@@ -23,7 +23,6 @@ def main():
     vga = sys.argv[6]
 
     exe_path = "./test_capture"
-    samples = 10000000
     frecuencias = [freq for freq in range(int(f_in), int(f_fin)+1, int(step)) for _ in range(int(n_cycles))]
     print(frecuencias)
 
@@ -31,17 +30,27 @@ def main():
     # Obtiene el directorio donde está este script Python actual
     base_dir = Path(__file__).resolve().parent
 
+    #------ parametros fijos para testeo -------- 
+
     iq_base_path = base_dir /"Samples"
-    output_path = base_dir /"Output_Dinamic_range"
-    scale = 'dBm'
-    R_ant = 50
     corrige_impedancia = False
-    nperseg = 2048
+    R_ant = 50
+    nperseg = 1024
     overlap = 0.5
 
-    #Amplitudes para rango dinamico 
-    dinamic_range = False
+    #------------- Parametros ---------
+    TIME_SLEEP = 2    # tiempo entre ciclo de adquisición
+    samples = 20000000
+    output_path = base_dir /"SAMPLES_test"   # Nombre del directorio de destino en el PC
+    scale = 'dBm'
+    update_static = True            # Actualizar csv del servidor 
+
+    server_url = "http://172.20.30.81:5000/upload_csv"  # servidor local host corriendo en el dispositivo de destino
     
+
+    #------- Amplitudes para rango dinamico ------------
+
+    dinamic_range = False  #Guardar la amplitud en el nombre del csv resultante 
     amp_init =-60
     amp_fin =-10
     step_amp = 2
@@ -50,7 +59,8 @@ def main():
     j=0
     ifamp = amp[j]
 
-    print(frecuencias)
+   #----- Bucle de adquisición y preocesamiento ------
+
     t_inicio_total = time.perf_counter()
 
     for i, freq in enumerate(frecuencias, start=1):
@@ -77,8 +87,6 @@ def main():
         iq_path = os.path.join(iq_base_path, str(0))  # por ejemplo: Samples/5680
         print(f"[INFO] Procesando archivo IQ: {iq_path}")
 
-        
-
         # --- Llamar directamente a la función Python ---
         f, Pxx, csv_filename = procesar_archivo_psd(
             iq_path=iq_path,
@@ -92,9 +100,13 @@ def main():
             overlap=overlap,
             plot=False,
             save_csv=False,
-            update_static= True, Amplitud=ifamp,dinamic_range = dinamic_range
+            update_static= update_static, 
+            Amplitud=ifamp,
+            dinamic_range = dinamic_range,
+            server_url = server_url
         )
-        j +=1
+        if dinamic_range:
+            j +=1
 
         print(f"[OK] PSD procesada para {freq} MHz. Archivo: {csv_filename}")
 
@@ -102,7 +114,7 @@ def main():
         print(f"⏱ Duración ciclo {freq} MHz: {t_fin_ciclo - t_inicio_ciclo:.2f} s")
 
         print("Esperando para la siguiente ...")
-        time.sleep(8)
+        time.sleep(TIME_SLEEP)
 
     t_fin_total = time.perf_counter()
     print(f"\n🏁 Duración total del proceso: {t_fin_total - t_inicio_total:.2f} s")
