@@ -15,42 +15,90 @@ import sys
 # ==============================
 
 def main():
+
+    # Modos permitidos
+    MODOS_VALIDOS = {
+        "dinamic range",
+        "power precision",
+        "DANL",
+        "frequency accuracy",
+        None,
+    }
+
+
+        
     f_in = sys.argv[1]
     f_fin = sys.argv[2]
     step = sys.argv[3]
     n_cycles = sys.argv[4]
-    lna = sys.argv[5]
-    vga = sys.argv[6]
-
-    exe_path = "./test_capture"
-    frecuencias = [freq for freq in range(int(f_in), int(f_fin)+1, int(step)) for _ in range(int(n_cycles))]
-    print(frecuencias)
-
-    # === Ruta automática ===
+        # === Ruta automática ===
     # Obtiene el directorio donde está este script Python actual
     base_dir = Path(__file__).resolve().parent
 
-    #------ parametros fijos para testeo -------- 
+    
+    #### ------------- Parametros ----------- ###
+    test_mode ="dinamic range"  # Modo de testeo, hay 4 modos disponibles
+    TIME_SLEEP = 8    # tiempo entre ciclo de adquisición
+    server_url = "http://172.20.30.81:5000/upload_csv"  # servidor local host corriendo en el dispositivo de destino
+    #### ------------------------------------ ### 
 
+
+    # Validar test_mode
+    if test_mode not in MODOS_VALIDOS:
+        raise ValueError(
+            f"Modo inválido: '{test_mode}'. "
+            f"Modos permitidos: {', '.join(str(m) for m in MODOS_VALIDOS)}"
+        )
+    #---------------solo si test_mode = None--------------------
+    output_path = base_dir /"Output_dinamic_range"
+    #----------------------------------------------------------
+
+
+    #------ parametros fijos para testeo -------- 
+    exe_path = "./test_capture"
     iq_base_path = base_dir /"Samples"
     corrige_impedancia = False
     R_ant = 50
-    nperseg = 1024
+    nperseg = 2048
     overlap = 0.5
-
-    #------------- Parametros ---------
-    TIME_SLEEP = 2    # tiempo entre ciclo de adquisición
-    samples = 20000000
-    output_path = base_dir /"SAMPLES_test"   # Nombre del directorio de destino en el PC
     scale = 'dBm'
-    update_static = True            # Actualizar csv del servidor 
+    samples = 20000000
 
-    server_url = "http://172.20.30.81:5000/upload_csv"  # servidor local host corriendo en el dispositivo de destino
+    if test_mode == "DANL":
+        samples = 10000000
+    
+
+   #Vector de frecuencias segun el modo de testeo
+    if test_mode == "DANL":
+        output_path = base_dir /"Output_DANL"   # Nombre del directorio de destino en el PC
+        scale = 'dBfs'
+        frecuencias = [freq for freq in range(int(50), int(5950)+1, int(50)) for _ in range(int(5))]
+    elif test_mode == "dinamic range":
+        frecuencias = [freq for freq in range(int(98), int(118)+1, int(20)) for _ in range(int(1))]
+        output_path = base_dir /"Output_dinamic_range"
+    elif test_mode == "power precision":
+        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(100)) for _ in range(int(1))]
+        output_path = base_dir /"Output_power_data"
+    elif test_mode == "frequency accuracy":
+        frecuencias = [freq for freq in range(int(1000), int(3000)+1, int(1000)) for _ in range(int(20))]
+        output_path = base_dir /"Output_frequency_error"
+    elif test_mode is None:
+        frecuencias = [freq for freq in range(int(f_in), int(f_fin)+1, int(step)) for _ in range(int(n_cycles))]
+
+    
+    update_static = True          # Actualizar csv del servidor 
+
+    if test_mode == "DANL":
+        update_static = False
     
 
     #------- Amplitudes para rango dinamico ------------
+    if test_mode == "dinamic range":
+        dinamic_range = True  #Guardar la amplitud en el nombre del csv resultante 
+    else:
+        dinamic_range = False
+        
 
-    dinamic_range = False  #Guardar la amplitud en el nombre del csv resultante 
     amp_init =-60
     amp_fin =-10
     step_amp = 2
@@ -69,7 +117,7 @@ def main():
         else:
             ifamp =1
 
-        print(f"\n=== [CICLO {i}] Ejecutando captura y procesamiento para {freq} MHz ===")
+        print(f"\n=== [CICLO {i}] Ejecutando captura y procesamiento para {freq} MHz, MODO {test_mode} ===")
         t_inicio_ciclo = time.perf_counter()
 
         # --- Ejecutar captura C ---
@@ -78,8 +126,8 @@ def main():
             exe_path,
             str(samples),
             str(freq),
-            str(lna),
-            str(vga)
+            str(0),
+            str(0)
         ], check=True)
         print(f"[OK] Captura completada para {freq} MHz")
 
