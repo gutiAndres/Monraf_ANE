@@ -191,6 +191,15 @@ def main():
         )
         print(f"[OK] Captura HackRF completada para {freq} MHz")
 
+        print(f"[INFO] Iniciando captura Keysight en {freq/1e6:.2f} MHz")
+
+        freqs_ks, psd_ks = ks.run_capture(
+            center_freq_hz=freq,
+            span_hz=SPAN_HZ,
+            n_averages=N_AVERAGES,
+        )
+
+
         # Archivo IQ HackRF
         iq_path = os.path.join(iq_base_path, str(0))  # Ajustar si usas otra convención
         print(f"[INFO] Procesando archivo IQ HackRF: {iq_path}")
@@ -220,15 +229,6 @@ def main():
         # 2) Captura Keysight sincronizada
         # ==============================
         if ks is not None:
-            fc_hz = freq * 1e6  # convertir MHz → Hz
-            print(f"[INFO] Iniciando captura Keysight en {fc_hz/1e6:.2f} MHz")
-
-            freqs_ks, psd_ks = ks.run_capture(
-                center_freq_hz=fc_hz,
-                span_hz=SPAN_HZ,
-                n_averages=N_AVERAGES,
-            )
-
             # ============================================
             # 3) Interpolación HackRF → eje Keysight
             # ============================================
