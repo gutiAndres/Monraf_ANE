@@ -31,13 +31,18 @@ def main():
     f_fin = sys.argv[2]
     step = sys.argv[3]
     n_cycles = sys.argv[4]
+    try:
+        test_mode = sys.argv[5]
+    except IndexError:
+        test_mode = None
+
+
         # === Ruta automática ===
     # Obtiene el directorio donde está este script Python actual
     base_dir = Path(__file__).resolve().parent
 
     
     #### ------------- Parametros ----------- ###
-    test_mode ="dinamic range"  # Modo de testeo, hay 4 modos disponibles
     TIME_SLEEP = 8    # tiempo entre ciclo de adquisición
     server_url = "http://172.20.30.81:5000/upload_csv"  # servidor local host corriendo en el dispositivo de destino
     #### ------------------------------------ ### 
