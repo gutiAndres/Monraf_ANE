@@ -3,30 +3,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import os
-
+from typing import List, Tuple, Dict, Any, Optional
 
 class N9000BCapture:
     """
-    Clase para manejar la adquisición de espectros con un Keysight N9000B.
-
-    Parámetros configurables principales (atributos de instancia):
-
-    - ip:              IP del N9000B (str)
-    - center_freqs_hz: lista o array de frecuencias centrales en Hz
-    - span_hz:         span de frecuencia en Hz (float)
-    - n_averages:      número de promedios por traza (int)
-    - wait_time_s:     tiempo de espera tras configurar frecuencia/span (float, s)
-    - output_dir:      carpeta donde se guardan CSV/PNG (str)
-    - visa_timeout:    timeout VISA en ms (int)
-    - visa_backend:    backend VISA, por defecto '@py' (str)
+    Clase para manejar la adquisición de espectros con un Keysight N9000B
+    a través de PyVISA. Modificada para enfocarse en la adquisición de un único
+    espectro promediado.
     """
 
     def __init__(
         self,
-        ip: str ='192.168.0.110',
-        center_freqs_hz=None,
+        ip: str ='192.168.46.127',
+        center_freqs_hz: Optional[List[float]] = None,
         span_hz: float = 20e6,
-        n_averages: int = 500,
+        n_averages: int = 500, # Valor por defecto, puede ser sobrescrito en run_batch_capture
         wait_time_s: float = 0.8,
         output_dir: str = "n9000b_only",
         visa_timeout: int = 10_000,
@@ -39,12 +30,10 @@ class N9000BCapture:
 
         # ---- Parámetros de adquisición ----
         if center_freqs_hz is None:
-            # Por defecto: 40, 50, 60 MHz (3 capturas por cada uno)
-            self.center_freqs_hz = np.repeat(
-                np.arange(40e6, 61e6 + 1, 10e6), 3
-            )
+            # Ahora solo importa la primera frecuencia para la captura única.
+            self.center_freqs_hz = [103e6] # Frecuencia única por defecto (e.g., 103 MHz)
         else:
-            self.center_freqs_hz = np.array(center_freqs_hz, dtype=float)
+            self.center_freqs_hz = [float(f) for f in center_freqs_hz]
 
         self.span_hz = float(span_hz)
         self.n_averages = int(n_averages)
@@ -55,18 +44,15 @@ class N9000BCapture:
         os.makedirs(self.output_dir, exist_ok=True)
 
         # ---- Handles VISA ----
-        self.rm = None
-        self.inst = None
+        self.rm: Optional[pyvisa.ResourceManager] = None
+        self.inst: Optional[pyvisa.resources.MessageBasedResource] = None
 
     # ==========================================================
     # ------------------- MANEJO DE ARCHIVOS -------------------
     # ==========================================================
     @staticmethod
     def get_unique_path(base_path: str) -> str:
-        """
-        Evita sobrescritura de archivos.
-        Si base_path existe → base_1.ext, base_2.ext, etc.
-        """
+        """Evita sobrescritura de archivos."""
         if not os.path.exists(base_path):
             return base_path
 
@@ -82,11 +68,14 @@ class N9000BCapture:
     # ---------------- CONEXIÓN Y CONFIGURACIÓN ----------------
     # ==========================================================
     def connect(self):
-        """Conecta al N9000B vía PyVISA usando los parámetros de la instancia."""
+        """Conecta al N9000B vía PyVISA."""
         try:
             self.rm = pyvisa.ResourceManager(self.visa_backend)
+            # La dirección es típicamente TCPIP::IP::INSTR para el N9000B
             self.inst = self.rm.open_resource(f"TCPIP::{self.ip}::INSTR")
             self.inst.timeout = self.visa_timeout
+            
+            # Limpiar y configurar formato de datos
             self.inst.write("*CLS")
             self.inst.write(":FORM ASC")
 
@@ -94,29 +83,34 @@ class N9000BCapture:
             print(f"✅ Conectado a N9000B: {idn}")
 
         except Exception as e:
-            raise RuntimeError(f"❌ Error conectando al N9000B: {e}")
+            raise RuntimeError(f"❌ Error conectando al N9000B ({self.ip}): {e}")
 
     def configure_frequency(self, center_freq_hz: float, span_hz: float):
         """Configura frecuencia central y span en el analizador."""
-        center_freq_hz *= 10e6
+        if self.inst is None:
+            raise ConnectionError("El instrumento no está conectado. Llame a 'connect()' primero.")
+            
         self.inst.write(f":SENSe:FREQuency:CENTer {center_freq_hz}")
         self.inst.write(f":SENSe:FREQuency:SPAN {span_hz}")
-        time.sleep(self.wait_time_s)
+        # Esperar un momento para que el barrido se estabilice
+        time.sleep(self.wait_time_s) 
 
     # ==========================================================
     # ---------------------- ADQUISICIÓN ------------------------
     # ==========================================================
-    def acquire_average_trace(self, n_averages: int = None) -> np.ndarray:
+    def acquire_average_trace(self, n_averages: int) -> np.ndarray:
         """
         Obtiene un trazo promediado con n_averages repeticiones.
-        Si n_averages es None, se usa self.n_averages.
         """
-        if n_averages is None:
-            n_averages = self.n_averages
-
+        if self.inst is None:
+            raise ConnectionError("El instrumento no está conectado.")
+            
         accumulator = None
 
+        # Nota: La implementación por software (`query_ascii_values` en loop) es robusta.
+        
         for i in range(n_averages):
+            # Adquirir los valores de amplitud del Trazo 1
             trace = np.array(self.inst.query_ascii_values(":TRACe:DATA? TRACE1"))
 
             if accumulator is None:
@@ -129,8 +123,10 @@ class N9000BCapture:
     # ==========================================================
     # ------------------------ GUARDADOS ------------------------
     # ==========================================================
-    def save_csv(self, freqs_hz: np.ndarray, powers_dbm: np.ndarray, center_freq_hz: float):
-        """Guarda CSV con frecuencia y amplitud."""
+    def _save_data(self, freqs_hz: np.ndarray, powers_dbm: np.ndarray, center_freq_hz: float):
+        """Guarda CSV y PNG para una sola adquisición."""
+        
+        # 1. Guardar CSV
         base_name = os.path.join(
             self.output_dir,
             f"n9000b_{int(center_freq_hz)}.csv"
@@ -145,12 +141,9 @@ class N9000BCapture:
             header="Freq_Hz,N9000B_dBm",
             comments=""
         )
-
         print(f"💾 CSV guardado: {csv_path}")
-        return csv_path
 
-    def save_plot(self, freqs_hz: np.ndarray, powers_dbm: np.ndarray, center_freq_hz: float):
-        """Guarda PNG con el espectro medido."""
+        # 2. Guardar PNG
         base_png = os.path.join(
             self.output_dir,
             f"n9000b_plot_{int(center_freq_hz)}.png"
@@ -158,9 +151,9 @@ class N9000BCapture:
         png_path = self.get_unique_path(base_png)
 
         plt.figure(figsize=(10, 6))
-        plt.plot(freqs_hz, powers_dbm, label="N9000B", linewidth=1)
-        plt.title(f"N9000B - Espectro Promediado ({center_freq_hz / 1e6:.2f} MHz)")
-        plt.xlabel("Frecuencia (Hz)")
+        plt.plot(freqs_hz / 1e6, powers_dbm, label="N9000B", linewidth=1)
+        plt.title(f"N9000B - Espectro Promediado (Centro: {center_freq_hz / 1e6:.2f} MHz)")
+        plt.xlabel("Frecuencia (MHz)") # Usar MHz en el plot para mejor legibilidad
         plt.ylabel("Amplitud (dBm)")
         plt.grid(True, linestyle="--", alpha=0.7)
         plt.legend()
@@ -169,66 +162,88 @@ class N9000BCapture:
         plt.close()
 
         print(f"🖼️ PNG guardado: {png_path}")
-        return png_path
+        return csv_path, png_path
 
     # ==========================================================
     # ------------------------- FLUJO ---------------------------
     # ==========================================================
-    def run_capture(
+    def run_single_capture(
             self,
-            center_freq_hz: float = None,
-            span_hz: float = None,
-            n_averages: int = None,
-        ):
+            center_freq_hz: float,
+            span_hz: float,
+            n_averages: int,
+        ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Ejecuta UNA sola adquisición en una frecuencia central.
-
-        - center_freq_hz: frecuencia central en Hz. Si es None, se toma de la instancia.
-        - span_hz: span en Hz. Si es None, se usa self.span_hz.
-        - n_averages: número de promedios. Si es None, se usa self.n_averages.
-
-        Devuelve:
-            freqs_hz, avg_trace  (ambos np.ndarray)
+        Ejecuta UNA sola adquisición completa (configurar, capturar, guardar).
         """
-
-        # 1) Resolver parámetros por defecto
-        if center_freq_hz is None:
-            # aquí puedes decidir de dónde sacar la frecuencia por defecto:
-            # opción A: primer elemento de self.center_freqs_hz
-            center_freq_hz = float(self.center_freqs_hz[0])
-            # opción B (si prefieres un atributo escalar): center_freq_hz = self.center_freq_hz
-
-        if span_hz is None:
-            span_hz = self.span_hz
-
-        if n_averages is None:
-            n_averages = self.n_averages
-
         fc = float(center_freq_hz)
         span_hz = float(span_hz)
 
-        print("📡 Iniciando adquisición N9000B (modo frecuencia única)...\n")
-        print(f"--- Captura Keysight: {fc / 1e6:.2f} MHz ---")
+        print(f"\n--- Captura Única {fc / 1e6:.2f} MHz (Span: {span_hz / 1e6:.2f} MHz, Promedios: {n_averages}) ---")
 
-        # 2) Configurar analizador
+        # 1) Configurar analizador
         self.configure_frequency(fc, span_hz)
 
-        # 3) Captura promediada
+        # 2) Captura promediada
         avg_trace = self.acquire_average_trace(n_averages=n_averages)
 
-        # 4) Eje de frecuencias asociado
+        # 3) Eje de frecuencias asociado
         f_start = fc - span_hz / 2
         f_end = fc + span_hz / 2
+        # El N9000B usualmente devuelve 401, 801, 1601, etc. puntos.
         freqs_hz = np.linspace(f_start, f_end, len(avg_trace))
 
-        # 5) Guardar resultados en disco
-        self.save_csv(freqs_hz, avg_trace, fc)
-        self.save_plot(freqs_hz, avg_trace, fc)
+        # 4) Guardar resultados en disco
+        self._save_data(freqs_hz, avg_trace, fc)
 
-        print("\n🏁 Proceso de captura completado.")
-
-        # Muy útil para sincronizar con HackRF: devolvemos los datos
+        # Devolvemos los datos
         return freqs_hz, avg_trace
+
+    def run_batch_capture(self, n_averages: int):
+        """
+        Ejecuta una adquisición única, utilizando la primera frecuencia central
+        definida y el número de promedios proporcionado.
+        
+        El parámetro n_averages ahora es el número entero que se pasa al método.
+        """
+        
+        center_freq = self.center_freqs_hz[0] # Tomar solo la primera frecuencia
+        
+        print("🚀 Iniciando Captura Única Propinada en N9000B.")
+        print(f"Frecuencia Central: {center_freq / 1e6:.2f} MHz")
+        print(f"Número de Promedios Solicitados: {n_averages}")
+        
+        results: Dict[str, Any] = {}
+
+        try:
+            # Conectar una sola vez
+            self.connect()
+
+            # Ejecutar la adquisición única y obtener los datos
+            freqs, powers = self.run_single_capture(
+                center_freq_hz=center_freq,
+                span_hz=self.span_hz,
+                n_averages=n_averages # Usar el valor entero pasado como argumento
+            )
+                
+            results = {
+                "center_freq_hz": center_freq,
+                "span_hz": self.span_hz,
+                "n_averages": n_averages,
+                "freqs": freqs,
+                "powers": powers
+            }
+
+            print("\n🏁 Proceso de captura única completado exitosamente.")
+            # Devuelve un diccionario (un resultado único) en lugar de una lista de diccionarios
+            return results
+
+        except RuntimeError as e:
+            print(f"\n❌ Error fatal durante la ejecución: {e}")
+            return None
+            
+        finally:
+            self.close()
 
 
     # ==========================================================
@@ -240,6 +255,7 @@ class N9000BCapture:
             print("🔌 Cerrando conexión VISA...")
             try:
                 self.inst.close()
+                self.inst = None
                 print("✅ Conexión VISA cerrada.")
             except Exception as e:
                 print(f"⚠️ Error al cerrar VISA: {e}")
@@ -248,25 +264,26 @@ class N9000BCapture:
 # =====================================================================
 # ---------------------------- EJEMPLO USO -----------------------------
 # =====================================================================
-"""
+
 if __name__ == "__main__":
-    # Ejemplo 1: usar parámetros por defecto
-    capt = N9000BCapture(
-        ip="192.168.0.110",
-        # center_freqs_hz=None → usa [40, 40, 40, 50, 50, 50, 60, 60, 60] MHz
-        span_hz=20e6,
-        n_averages=500,
-        output_dir="n9000b_capturas",
+    
+    # 1. Inicializar la clase con la configuración deseada
+    # Nota: center_freqs_hz ahora toma solo el primer valor de la lista.
+    captura_n9000b = N9000BCapture(
+        ip="192.168.46.127",
+        center_freqs_hz=[95.1e6], # Solo se usará 95.1 MHz
+        span_hz=5e6,
+        n_averages=10, # Este valor es ignorado si se pasa un n_averages a run_batch_capture
+        output_dir="n9000b_captura_unica_test11",
     )
 
-    try:
-        capt.connect()
-        capt.run_capture()  # usa los parámetros de la instancia
+    # El entero que pides: 200, que es el número de promedios (n_averages)
+    NUM_PROMEDIOS_A_USAR = 500
+    
+    # 2. Ejecutar el flujo de captura única (llamada anteriormente 'batch')
+    data_result = captura_n9000b.run_batch_capture(NUM_PROMEDIOS_A_USAR)
 
-        # Ejemplo 2: en la misma instancia, hacer otra corrida con otros params:
-        # nuevas_fcs = [100e6, 150e6]
-        # capt.run_capture(center_freqs_hz=nuevas_fcs, span_hz=10e6, n_averages=200)
-
-    finally:
-        capt.close()
-"""
+    if data_result:
+        print(f"\nEspectro capturado en {data_result['center_freq_hz'] / 1e6:.2f} MHz.")
+        print(f"Dimensiones de los datos de potencia: {data_result['powers'].shape}")
+        # Aquí se podría continuar con el procesamiento del espectro único

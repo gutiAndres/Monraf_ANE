@@ -44,7 +44,7 @@ def main():
     
     #### ------------- Parametros ----------- ###
     TIME_SLEEP = 8    # tiempo entre ciclo de adquisición
-    server_url = "http://172.20.30.81:5000/upload_csv"  # servidor local host corriendo en el dispositivo de destino
+    server_url = "http://192.168.0.102:5000/upload_csv"  # servidor local host corriendo en el dispositivo de destino
     #### ------------------------------------ ### 
 
 
@@ -55,7 +55,7 @@ def main():
             f"Modos permitidos: {', '.join(str(m) for m in MODOS_VALIDOS)}"
         )
     #---------------solo si test_mode = None--------------------
-    output_path = base_dir /"Output_dinamic_range"
+    output_path = base_dir /"Output_test_compare"
     #----------------------------------------------------------
 
 
@@ -152,7 +152,7 @@ def main():
             nperseg=nperseg,
             overlap=overlap,
             plot=False,
-            save_csv=False,
+            save_csv=True,
             update_static= update_static, 
             Amplitud=ifamp,
             dinamic_range = dinamic_range,
@@ -160,6 +160,8 @@ def main():
         )
         if dinamic_range:
             j +=1
+
+        print(f"psd_ {Pxx[10:20]}")
 
         print(f"[OK] PSD procesada para {freq} MHz. Archivo: {csv_filename}")
 
