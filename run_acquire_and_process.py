@@ -80,14 +80,15 @@ def main():
         scale = 'dBfs'
         frecuencias = [freq for freq in range(int(50), int(5950)+1, int(50)) for _ in range(int(5))]
     elif test_mode == "dinamic_range":
-        frecuencias = [freq for freq in range(int(98), int(118)+1, int(20)) for _ in range(int(1))]
+        frecuencias = [freq for freq in range(int(98), int(118)+1, int(20)) for _ in range(int(200))]
         output_path = base_dir /"Output_dinamic_range"
     elif test_mode == "power_precision":
-        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(100)) for _ in range(int(200))]
+        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(100)) for _ in range(int(1))]
         output_path = base_dir /"Output_power_data"
     elif test_mode == "frequency_accuracy":
         frecuencias = [freq for freq in range(int(998), int(2998)+1, int(1000)) for _ in range(int(20))]
         output_path = base_dir /"Output_frequency_error"
+        nperseg = 200000
     elif test_mode is None:
         frecuencias = [freq for freq in range(int(f_in), int(f_fin)+1, int(step)) for _ in range(int(n_cycles))]
     elif test_mode == "DANL_dbm":
