@@ -92,6 +92,7 @@ def main():
         frecuencias = [freq for freq in range(int(f_in), int(f_fin)+1, int(step)) for _ in range(int(n_cycles))]
     elif test_mode == "DANL_dbm":
         frecuencias = [freq for freq in range(int(98), int(5898)+1, int(10000)) for _ in range(int(1))]
+        output_path = base_dir /"Output_DANL"
     
 
     
