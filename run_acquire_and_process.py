@@ -81,14 +81,17 @@ def main():
     elif test_mode == "dinamic range":
         frecuencias = [freq for freq in range(int(98), int(118)+1, int(20)) for _ in range(int(1))]
         output_path = base_dir /"Output_dinamic_range"
-    elif test_mode == "power_precision":
+    elif test_mode == "power precision":
         frecuencias = [freq for freq in range(int(98), int(5898)+1, int(100)) for _ in range(int(200))]
         output_path = base_dir /"Output_power_data"
     elif test_mode == "frequency_accuracy":
-        frecuencias = [freq for freq in range(int(998), int(2998)+1, int(1000)) for _ in range(int(20))]
+        frecuencias = [freq for freq in range(int(1000), int(3000)+1, int(1000)) for _ in range(int(20))]
         output_path = base_dir /"Output_frequency_error"
     elif test_mode is None:
         frecuencias = [freq for freq in range(int(f_in), int(f_fin)+1, int(step)) for _ in range(int(n_cycles))]
+    elif test_mode == "DANL_dbm":
+        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(10000)) for _ in range(int(1))]
+    
 
     
     update_static = True          # Actualizar csv del servidor 
@@ -98,7 +101,7 @@ def main():
     
 
     #------- Amplitudes para rango dinamico ------------
-    if test_mode == "dinamic_range":
+    if test_mode == "dinamic range":
         dinamic_range = True  #Guardar la amplitud en el nombre del csv resultante 
     else:
         dinamic_range = False
@@ -152,7 +155,7 @@ def main():
             nperseg=nperseg,
             overlap=overlap,
             plot=False,
-            save_csv=False,
+            save_csv=True,
             update_static= update_static, 
             Amplitud=ifamp,
             dinamic_range = dinamic_range,
