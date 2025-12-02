@@ -22,6 +22,7 @@ def main():
         "power_precision",
         "DANL",
         "frequency_accuracy",
+        "DANL_dbm",
         None,
     }
 
