@@ -18,10 +18,10 @@ def main():
 
     # Modos permitidos
     MODOS_VALIDOS = {
-        "dinamic range",
-        "power precision",
+        "dinamic_range",
+        "power_precision",
         "DANL",
-        "frequency accuracy",
+        "frequency_accuracy",
         None,
     }
 
@@ -43,8 +43,8 @@ def main():
 
     
     #### ------------- Parametros ----------- ###
-    TIME_SLEEP = 8    # tiempo entre ciclo de adquisición
-    server_url = "http://192.168.0.102:5000/upload_csv"  # servidor local host corriendo en el dispositivo de destino
+    TIME_SLEEP = 1    # tiempo entre ciclo de adquisición
+    server_url = "http://192.168.0.100:5000/upload_csv"  # servidor local host corriendo en el dispositivo de destino
     #### ------------------------------------ ### 
 
 
@@ -81,11 +81,11 @@ def main():
     elif test_mode == "dinamic range":
         frecuencias = [freq for freq in range(int(98), int(118)+1, int(20)) for _ in range(int(1))]
         output_path = base_dir /"Output_dinamic_range"
-    elif test_mode == "power precision":
-        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(100)) for _ in range(int(1))]
+    elif test_mode == "power_precision":
+        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(100)) for _ in range(int(200))]
         output_path = base_dir /"Output_power_data"
-    elif test_mode == "frequency accuracy":
-        frecuencias = [freq for freq in range(int(1000), int(3000)+1, int(1000)) for _ in range(int(20))]
+    elif test_mode == "frequency_accuracy":
+        frecuencias = [freq for freq in range(int(998), int(2998)+1, int(1000)) for _ in range(int(20))]
         output_path = base_dir /"Output_frequency_error"
     elif test_mode is None:
         frecuencias = [freq for freq in range(int(f_in), int(f_fin)+1, int(step)) for _ in range(int(n_cycles))]
@@ -98,7 +98,7 @@ def main():
     
 
     #------- Amplitudes para rango dinamico ------------
-    if test_mode == "dinamic range":
+    if test_mode == "dinamic_range":
         dinamic_range = True  #Guardar la amplitud en el nombre del csv resultante 
     else:
         dinamic_range = False
@@ -152,7 +152,7 @@ def main():
             nperseg=nperseg,
             overlap=overlap,
             plot=False,
-            save_csv=True,
+            save_csv=False,
             update_static= update_static, 
             Amplitud=ifamp,
             dinamic_range = dinamic_range,
