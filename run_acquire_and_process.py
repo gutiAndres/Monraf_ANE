@@ -88,7 +88,7 @@ def main():
     elif test_mode == "frequency_accuracy":
         frecuencias = [freq for freq in range(int(998), int(2998)+1, int(1000)) for _ in range(int(20))]
         output_path = base_dir /"Output_frequency_error"
-        nperseg = 200000
+        nperseg = 16384
     elif test_mode is None:
         frecuencias = [freq for freq in range(int(f_in), int(f_fin)+1, int(step)) for _ in range(int(n_cycles))]
     elif test_mode == "DANL_dbm":
