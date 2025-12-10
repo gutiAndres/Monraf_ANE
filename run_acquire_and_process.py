@@ -44,8 +44,9 @@ def main():
 
     
     #### ------------- Parametros ----------- ###
-    TIME_SLEEP = 1    # tiempo entre ciclo de adquisición
-    server_url = "http://192.168.0.100:5000/upload_csv"  # servidor local host corriendo en el dispositivo de destino
+    TIME_SLEEP = 7    # tiempo entre ciclo de adquisición al cambiar de frecuencia 
+    server_url = "http://192.168.0.102:5000/upload_csv"     # servidor local host corriendo en el dispositivo de destino
+ 
     #### ------------------------------------ ### 
 
 
@@ -56,7 +57,7 @@ def main():
             f"Modos permitidos: {', '.join(str(m) for m in MODOS_VALIDOS)}"
         )
     #---------------solo si test_mode = None--------------------
-    output_path = base_dir /"Output_test_compare"
+    output_path = base_dir /"Output_power_data"
     #----------------------------------------------------------
 
 
@@ -83,8 +84,8 @@ def main():
         frecuencias = [freq for freq in range(int(98), int(118)+1, int(20)) for _ in range(int(200))]
         output_path = base_dir /"Output_dinamic_range"
     elif test_mode == "power_precision":
-        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(100)) for _ in range(int(1))]
-        output_path = base_dir /"Output_power_data"
+        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(100)) for _ in range(int(50))]
+        output_path = base_dir /"Output_power_data2"
     elif test_mode == "frequency_accuracy":
         frecuencias = [freq for freq in range(int(998), int(2998)+1, int(1000)) for _ in range(int(20))]
         output_path = base_dir /"Output_frequency_error"
@@ -92,10 +93,9 @@ def main():
     elif test_mode is None:
         frecuencias = [freq for freq in range(int(f_in), int(f_fin)+1, int(step)) for _ in range(int(n_cycles))]
     elif test_mode == "DANL_dbm":
-        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(10000)) for _ in range(int(1))]
+        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(10000)) for _ in range(int(5))]
         output_path = base_dir /"Output_DANL"
     
-
     
     update_static = True          # Actualizar csv del servidor 
 
@@ -122,6 +122,7 @@ def main():
 
     t_inicio_total = time.perf_counter()
 
+
     for i, freq in enumerate(frecuencias, start=1):
         if dinamic_range:
             ifamp = amp[j]
@@ -129,6 +130,15 @@ def main():
             ifamp =1
 
         print(f"\n=== [CICLO {i}] Ejecutando captura y procesamiento para {freq} MHz, MODO {test_mode} ===")
+        if (i >0):
+            if frecuencias[i]==frecuencias[i-1]:
+                TIME_SLEEP=0.5
+            else:
+                print(f"\n==========FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i]}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!======")
+                print(f"\n==========FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i]}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!======")
+                time.sleep(TIME_SLEEP)               
+                
+        
         t_inicio_ciclo = time.perf_counter()
 
         # --- Ejecutar captura C ---
@@ -158,10 +168,10 @@ def main():
             nperseg=nperseg,
             overlap=overlap,
             plot=False,
-            save_csv=True,
+            save_csv=False,
             update_static= update_static, 
             Amplitud=ifamp,
-            dinamic_range = dinamic_range,
+            dinamic_range = False,
             server_url = server_url
         )
         if dinamic_range:
