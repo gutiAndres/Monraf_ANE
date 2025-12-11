@@ -271,7 +271,7 @@ if __name__ == "__main__":
     # Nota: center_freqs_hz ahora toma solo el primer valor de la lista.
     captura_n9000b = N9000BCapture(
         ip="192.168.46.127",
-        center_freqs_hz=[95.1e6], # Solo se usará 95.1 MHz
+        center_freqs_hz=[freq for freq in range(int(98), int(118)+1, int(20)) for _ in range(int(10))], # Solo se usará 95.1 MHz
         span_hz=5e6,
         n_averages=10, # Este valor es ignorado si se pasa un n_averages a run_batch_capture
         output_dir="n9000b_captura_unica_test11",

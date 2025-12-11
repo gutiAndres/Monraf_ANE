@@ -300,17 +300,6 @@ void execute_welch_psd(signal_iq_t* signal_data, const PsdConfig_t* config, doub
 
     fftshift(p_out, nfft);
 
-    // --- DC SPIKE REMOVAL ---
-    // Flatten center 7 bins (indices -3 to +3 relative to DC)
-    // Replace them with the average of the neighbors at -4 and +4
-    int c = nfft / 2; 
-    if (nfft > 8) {
-        double neighbor_mean = (p_out[c - 4] + p_out[c + 4]) / 2.0;
-        for (int i = -3; i <= 3; i++) {
-            p_out[c + i] = neighbor_mean;
-        }
-    }
-
     double df = fs / nfft;
     for (int i = 0; i < nfft; i++) {
         f_out[i] = -fs / 2.0 + i * df;
