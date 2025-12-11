@@ -57,7 +57,7 @@ def main():
             f"Modos permitidos: {', '.join(str(m) for m in MODOS_VALIDOS)}"
         )
     #---------------solo si test_mode = None--------------------
-    output_path = base_dir /"Output_power_data"
+    output_path = base_dir /"Output_power_data_fm"
     #----------------------------------------------------------
 
 
@@ -66,7 +66,7 @@ def main():
     iq_base_path = base_dir /"Samples"
     corrige_impedancia = False
     R_ant = 50
-    nperseg = 2048
+    nperseg = 1024
     overlap = 0.5
     scale = 'dBm'
     samples = 20000000
@@ -132,7 +132,7 @@ def main():
         print(f"\n=== [CICLO {i}] Ejecutando captura y procesamiento para {freq} MHz, MODO {test_mode} ===")
         if (i >0):
             if frecuencias[i]==frecuencias[i-1]:
-                TIME_SLEEP=0.5
+                print("")
             else:
                 print(f"\n==========FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i]}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!======")
                 print(f"\n==========FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i]}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!======")
@@ -185,7 +185,7 @@ def main():
         print(f"⏱ Duración ciclo {freq} MHz: {t_fin_ciclo - t_inicio_ciclo:.2f} s")
 
         print("Esperando para la siguiente ...")
-        time.sleep(TIME_SLEEP)
+        time.sleep(0.3)
 
     t_fin_total = time.perf_counter()
     print(f"\n🏁 Duración total del proceso: {t_fin_total - t_inicio_total:.2f} s")
