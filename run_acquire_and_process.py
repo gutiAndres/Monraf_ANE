@@ -8,7 +8,19 @@ import os
 from psd_welch_hackrf_exec import procesar_archivo_psd
 import os, time
 import sys
+import tkinter as tk
+from tkinter import messagebox
 
+def mostrar_warning(titulo="Advertencia", mensaje="Debe confirmar para continuar"):
+    # Crear ventana raíz oculta
+    root = tk.Tk()
+    root.withdraw()  # Oculta la ventana principal
+
+    # Mostrar ventana WARNING bloqueante
+    messagebox.showwarning(titulo, mensaje)
+
+    # Cerrar la instancia de Tkinter cuando se presiona OK
+    root.destroy()
 
 # ==============================
 # Configuración general
@@ -44,7 +56,7 @@ def main():
 
     
     #### ------------- Parametros ----------- ###
-    TIME_SLEEP = 7    # tiempo entre ciclo de adquisición al cambiar de frecuencia 
+    TIME_SLEEP = 0.5    # tiempo entre ciclo de adquisición al cambiar de frecuencia 
     server_url = "http://192.168.0.102:5000/upload_csv"     # servidor local host corriendo en el dispositivo de destino
  
     #### ------------------------------------ ### 
@@ -57,7 +69,7 @@ def main():
             f"Modos permitidos: {', '.join(str(m) for m in MODOS_VALIDOS)}"
         )
     #---------------solo si test_mode = None--------------------
-    output_path = base_dir /"Output_power_data_fm"
+    output_path = base_dir /"Output_power_data2"
     #----------------------------------------------------------
 
 
@@ -84,7 +96,7 @@ def main():
         frecuencias = [freq for freq in range(int(98), int(118)+1, int(20)) for _ in range(int(200))]
         output_path = base_dir /"Output_dinamic_range"
     elif test_mode == "power_precision":
-        frecuencias = [freq for freq in range(int(98), int(5898)+1, int(100)) for _ in range(int(50))]
+        frecuencias = [freq for freq in range(int(98), int(3998)+1, int(100)) for _ in range(int(3))]
         output_path = base_dir /"Output_power_data2"
     elif test_mode == "frequency_accuracy":
         frecuencias = [freq for freq in range(int(998), int(2998)+1, int(1000)) for _ in range(int(20))]
@@ -130,15 +142,18 @@ def main():
             ifamp =1
 
         print(f"\n=== [CICLO {i}] Ejecutando captura y procesamiento para {freq} MHz, MODO {test_mode} ===")
-        if (i >0):
-            if frecuencias[i]==frecuencias[i-1]:
-                print("")
+        if (i >1):
+            if frecuencias[i-1]==frecuencias[i-2]:
+                print("...")
             else:
-                print(f"\n==========FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i]}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!======")
-                print(f"\n==========FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i]}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!======")
+                print(f"\n==========FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i-1]+2}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!======")
+                print(f"\n==========FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i-1]+2}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!======")
                 time.sleep(TIME_SLEEP)               
-                
-        
+            
+            mostrar_warning(
+                titulo="Cambio de frecuencia",
+                mensaje=f"FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i-1]+2}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!"
+            )
         t_inicio_ciclo = time.perf_counter()
 
         # --- Ejecutar captura C ---
