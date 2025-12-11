@@ -9,11 +9,13 @@ from psd_welch_hackrf_exec import procesar_archivo_psd
 
 from n9000b_capture import N9000BCapture  # <-- integración N9000B
 
+
 import os
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
+from test_acquire import acquire_psd
 
 def compare_and_save_psd(
     pwr_n9000: np.ndarray,
@@ -259,6 +261,36 @@ def main():
             print(f"\n=== [CICLO {i}] Ejecutando captura y procesamiento para {freq} MHz, MODO {test_mode} ===")
             t_inicio_ciclo = time.perf_counter()
 
+
+
+            # ------------------ HACKRF ------------------
+            print(f"[INFO] Ejecutando captura HackRF: {exe_path} {samples} {freq}")
+
+            # Sobrescribir parámetros si quieres (opcional)
+            overrides = {
+                "center_freq_hz": freq,   # 93.7 MHz
+                "span": 20_000_000,             # 10 MHz
+                "lna_gain": 0,
+                "vga_gain": 0,
+            }
+
+            f_psd, Pxx_psd = acquire_psd(
+                cfg_overrides=overrides,
+                timeout_s=5.0,
+                save_metrics=False,  # o True si quieres CSV
+                do_plot=False        # puedes graficar tú mismo
+            )
+
+
+
+            # Aquí ya tienes los vectores para procesamiento adicional
+            print("frequencies (Hz):", f_psd[:5], "...")
+            print("PSD (first 5):", Pxx_psd[:5], "...")
+
+            print(f"[OK] Captura HackRF completada para {freq} MHz")
+
+            time.sleep(8)
+
             # ------------------ N9000B ------------------
             if n9000 is not None:
                 print(f"[INFO] Iniciando captura N9000B para {freq} MHz")
@@ -276,50 +308,12 @@ def main():
                 
             time.sleep(10)
 
-            # ------------------ HACKRF ------------------
-            print(f"[INFO] Ejecutando captura HackRF: {exe_path} {samples} {freq}")
-            subprocess.run(
-                [
-                    exe_path,
-                    str(samples),
-                    str(freq),
-                    str(0),
-                    str(0),
-                ],
-                check=True
-            )
-            print(f"[OK] Captura HackRF completada para {freq} MHz")
-
-
-
-
-
             # Ruta del archivo IQ generado
             iq_path = os.path.join(iq_base_path, str(0))
             print(f"[INFO] Procesando archivo IQ HackRF: {iq_path}")
 
             # Procesamiento PSD HackRF
-            f_psd, Pxx_psd, csv_filename = procesar_archivo_psd(
-                iq_path=iq_path,
-                output_path=output_path,
-                fs=20e6,
-                indice=freq,
-                scale=scale,
-                R_ant=R_ant,
-                corrige_impedancia=corrige_impedancia,
-                nperseg=nperseg,
-                overlap=overlap,
-                plot=False,
-                save_csv=True,
-                update_static=update_static,
-                Amplitud=ifamp,
-                dinamic_range=dinamic_range,
-                server_url=server_url,
-            )
-            if dinamic_range:
-                j += 1
-
-            print(f"[OK] PSD HackRF procesada para {freq} MHz. Archivo: {csv_filename}")
+            print(f"[OK] PSD HackRF procesada para {freq} MHz. ")
             
 
             csv_comp, img_comp, f_common, p_n9000, p_hackrf_interp = compare_and_save_psd(
@@ -329,8 +323,6 @@ def main():
                 Pxx_psd=Pxx_psd,
                 output_path=output_path,
             )
-
-
 
             # ------------------ Tiempo & espera ------------------
             t_fin_ciclo = time.perf_counter()

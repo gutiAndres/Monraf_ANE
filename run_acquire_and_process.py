@@ -66,7 +66,7 @@ def main():
     iq_base_path = base_dir /"Samples"
     corrige_impedancia = False
     R_ant = 50
-    nperseg = 1024
+    nperseg = 2048
     overlap = 0.5
     scale = 'dBm'
     samples = 20000000
