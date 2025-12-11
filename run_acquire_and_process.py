@@ -8,19 +8,7 @@ import os
 from psd_welch_hackrf_exec import procesar_archivo_psd
 import os, time
 import sys
-import tkinter as tk
-from tkinter import messagebox
 
-def mostrar_warning(titulo="Advertencia", mensaje="Debe confirmar para continuar"):
-    # Crear ventana raíz oculta
-    root = tk.Tk()
-    root.withdraw()  # Oculta la ventana principal
-
-    # Mostrar ventana WARNING bloqueante
-    messagebox.showwarning(titulo, mensaje)
-
-    # Cerrar la instancia de Tkinter cuando se presiona OK
-    root.destroy()
 
 # ==============================
 # Configuración general
@@ -150,10 +138,7 @@ def main():
                 print(f"\n==========FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i-1]+2}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!======")
                 time.sleep(TIME_SLEEP)               
             
-            mostrar_warning(
-                titulo="Cambio de frecuencia",
-                mensaje=f"FRECUENCIA DE MEDICIÓN HA CAMBIADO A {frecuencias[i-1]+2}, ¡¡¡CAMBIE LA FRECUECNIA EN EL GENERADOR!!!"
-            )
+
         t_inicio_ciclo = time.perf_counter()
 
         # --- Ejecutar captura C ---
