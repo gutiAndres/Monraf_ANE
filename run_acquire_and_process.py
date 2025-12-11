@@ -96,7 +96,7 @@ def main():
         frecuencias = [freq for freq in range(int(98), int(118)+1, int(20)) for _ in range(int(200))]
         output_path = base_dir /"Output_dinamic_range"
     elif test_mode == "power_precision":
-        frecuencias = [freq for freq in range(int(98), int(3998)+1, int(100)) for _ in range(int(3))]
+        frecuencias = [freq for freq in range(int(98), int(3998)+1, int(100)) for _ in range(int(50))]
         output_path = base_dir /"Output_power_data2"
     elif test_mode == "frequency_accuracy":
         frecuencias = [freq for freq in range(int(998), int(2998)+1, int(1000)) for _ in range(int(20))]
