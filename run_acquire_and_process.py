@@ -44,7 +44,7 @@ def main():
 
     
     #### ------------- Parametros ----------- ###
-    TIME_SLEEP = 0.5    # tiempo entre ciclo de adquisición al cambiar de frecuencia 
+    TIME_SLEEP = 7    # tiempo entre ciclo de adquisición al cambiar de frecuencia 
     server_url = "http://192.168.0.102:5000/upload_csv"     # servidor local host corriendo en el dispositivo de destino
  
     #### ------------------------------------ ### 
@@ -66,7 +66,7 @@ def main():
     iq_base_path = base_dir /"Samples"
     corrige_impedancia = False
     R_ant = 50
-    nperseg = 2048
+    nperseg = 1024
     overlap = 0.5
     scale = 'dBm'
     samples = 20000000
@@ -185,7 +185,7 @@ def main():
         print(f"⏱ Duración ciclo {freq} MHz: {t_fin_ciclo - t_inicio_ciclo:.2f} s")
 
         print("Esperando para la siguiente ...")
-        time.sleep(0.3)
+        time.sleep(0.5)
 
     t_fin_total = time.perf_counter()
     print(f"\n🏁 Duración total del proceso: {t_fin_total - t_inicio_total:.2f} s")
